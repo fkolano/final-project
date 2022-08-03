@@ -64,6 +64,121 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
     },
 
+    signup: (data) => {
+      const store = getStore();
+      console.log("data received", data);
+      console.log(JSON.stringify(data));
+      return fetch(`${base_url}/api/signup/`, {
+        method: "POST",
+        // causing POST 500 and 401 error
+        // mode: "no-cors",
+        headers: { "Content-type": "application/json" },
+        body: JSON.stringify(data),
+      })
+        .then((res) => {
+          if (res.status === 409)
+            throw new Error(
+              "The email address already exists. Please login to your account to continue."
+            );
+          // else if (!res.ok) throw new Error(res.statusText);
+
+          return res.json();
+        })
+        .then((data) => {
+          console.log("data ", data);
+          getActions().setAlert({
+            type: "success",
+            msg: data.msg,
+            show: true,
+          });
+
+          return true;
+        })
+        .catch((err) => err);
+    },
+
+    handleLogin: (user) => {
+      const store = getStore();
+      store.user = user;
+      store.user.loggedIn = true;
+      setStore(store);
+    },
+    handleLogout: () => {
+      const store = getStore();
+      store.user = {
+        token: "",
+        email: "",
+        id: null,
+      };
+      store.user.loggedIn = false;
+      setStore(store);
+    },
+
+    addBookmark: (gun) => {
+      let userObj = JSON.parse(sessionStorage.getItem("guniverse_user"));
+      let user_id = userObj["id"];
+      let gun_id = gun["id"];
+
+      let payload = {
+        gun: gun,
+      };
+      console.log("Payload: ", payload);
+
+      return fetch(`${base_url}/api/bookmark/user/${user_id}`, {
+        method: "PUT",
+        // mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => {
+          // if (!res.ok) throw new Error(res.statusText);
+          return res.json();
+        })
+        .then((data) =>
+          setStore({
+            user: {
+              ...data.user,
+              loggedIn: true,
+            },
+          })
+        );
+    },
+
+    deleteBookmark: (gun) => {
+      let userObj = JSON.parse(sessionStorage.getItem("guniverse_user"));
+      let user_id = userObj["id"];
+      let gun_id = gun["id"];
+
+      let payload = {
+        gun_id: gun_id,
+      };
+
+      console.log("Payload: ", payload);
+
+      return fetch(`${base_url}/api/bookmark/user/${user_id}`, {
+        method: "DELETE",
+        // mode: "no-cors",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+        .then((res) => {
+          // if (!res.ok) throw new Error(res.statusText);
+          return res.json();
+        })
+        .then((data) =>
+          setStore({
+            user: {
+              ...data.user,
+              loggedIn: true,
+            },
+          })
+        );
+    },
+
     getMessage: () => {
       const store = getStore();
       const opts = {
